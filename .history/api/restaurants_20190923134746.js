@@ -1,0 +1,188 @@
+'use strict';
+
+import { v1 } from 'uuid';
+import { config, DynamoDB } from 'aws-sdk';
+import shuffle from '../utils/shuffle';
+
+config.setPromisesDependency(require('bluebird'));
+
+const dynamoDb = new DynamoDB.DocumentClient();
+
+// 맛집 추가
+export function add(event, context, callback) {
+  const requestBody = JSON.parse(event.body);
+  const {
+    name: restaurantName,
+    foodType,
+    recommendedMenu,
+    price,
+    location: address,
+    businessHour,
+    contactNumber,
+    recommend,
+    review,
+    positionX,
+    positionY,
+    imageURL
+  } = requestBody;
+
+  if (
+    typeof restaurantName !== 'string' ||
+    typeof foodType !== 'string' ||
+    typeof recommendedMenu !== 'string' ||
+    typeof recommend !== 'number'
+  ) {
+    console.error('Validation Failed');
+    callback(
+      new Error("Couldn't add restaurant because of validation errors.")
+    );
+    return;
+  }
+
+  addRestaurant(restaurantInfo(requestBody))
+    .then(res => {
+      callback(null, {
+        statusCode: 200,
+        body: JSON.stringify({
+          message: `Sucessfully submitted restaurant with restaurantName ${restaurantName}`,
+          restaurantId: res.id
+        })
+      });
+    })
+    .catch(err => {
+      console.log(err);
+      callback(null, {
+        statusCode: 500,
+        body: JSON.stringify({
+          message: `Unable to submit restaurant with restaurantName ${restaurantName}`
+        })
+      });
+    });
+}
+
+const addRestaurant = restaurant => {
+  console.log('Adding restaurant');
+  const restaurantInfo = {
+    TableName: process.env.RESTAURANT_TABLE,
+    Item: restaurant
+  };
+  return dynamoDb
+    .put(restaurantInfo)
+    .promise()
+    .then(res => restaurant);
+};
+
+const restaurantInfo = requestBody => {
+  const {
+    name: restaurantName,
+    foodType,
+    recommendedMenu,
+    price,
+    location: address,
+    businessHour,
+    contactNumber,
+    recommend,
+    review,
+    positionX,
+    positionY,
+    imageURL
+  } = requestBody;
+
+  const timestamp = new Date().getTime();
+  return {
+    id: v1(),
+    restaurantName: restaurantName,
+    foodType: foodType,
+    recommendedMenu: recommendedMenu,
+    price: price,
+    address: address,
+    businessHour: businessHour,
+    contactNumber: contactNumber,
+    recommend: recommend,
+    review: review,
+    positionX: positionX,
+    positionY: positionY,
+    imageURL: imageURL,
+    submittedAt: timestamp,
+    updatedAt: timestamp
+  };
+};
+
+// 전체 맛집 리스트 조회
+export function list(event, context, callback) {
+  const params = {
+    TableName: process.env.RESTAURANT_TABLE,
+    ProjectionExpression:
+      'id, restaurantName, foodType, address, recommendedMenu, price, businessHour, contactNumber, recommend, review, positionX, positionY'
+  };
+
+  console.log('Scanning restaurant table');
+  const onScan = (err, data) => {
+    if (err) {
+      console.log(
+        'Scan failed to load data. Error JSON: ',
+        JSON.stringify(err, null, 2)
+      );
+      callback(err);
+    } else {
+      console.log('Scan succeeded');
+      return callback(null, {
+        statusCode: 200,
+        body: JSON.stringify(data.Items)
+      });
+    }
+  };
+  dynamoDb.scan(params, onScan);
+}
+
+// 특정 맛집 정보 조회
+export function get(event, context, callback) {
+  const params = {
+    TableName: process.env.RESTAURANT_TABLE,
+    Key: {
+      id: event.pathParameters.id
+    }
+  };
+
+  dynamoDb
+    .get(params)
+    .promise()
+    .then(result => {
+      const response = {
+        statusCode: 200,
+        body: JSON.stringify(result.Item)
+      };
+      callback(null, response);
+    })
+    .catch(error => {
+      console.error(error);
+      callback(new Error("Couldn't fetch restaurant."));
+      return;
+    });
+}
+
+// 맛집 랜덤 추첨
+export function getRandom(event, context, callback) {
+  const params = {
+    TableName: process.env.RESTAURANT_TABLE,
+    ProjectionExpression:
+      'id, restaurantName, foodType, address, recommendedMenu, price, businessHour, contactNumber, recommend, review, positionX, positionY'
+  };
+
+  console.log('Scanning randomly restaurant table');
+  const onRandomScan = (err, data) => {
+    if (err) {
+      console.log(
+        'Scan failed to load data. Error JSON: ',
+        JSON.stringify(err, null, 2)
+      );
+      callback(err);
+    }
+    console.log('Random Scan succeeded');
+    return callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(...shuffle(data.Items).splice(0, 1))
+    });
+  };
+  dynamoDb.scan(params, onRandomScan);
+}
