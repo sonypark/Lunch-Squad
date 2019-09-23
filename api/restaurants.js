@@ -15,7 +15,7 @@ AWS.config.setPromisesDependency(require('bluebird'));
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 // 맛집 추가
-module.exports.add = (event, context, callback) => {
+module.exports.add = async (event, context, callback) => {
   const requestBody = JSON.parse(event.body);
   const {
     name: restaurantName,
@@ -45,8 +45,9 @@ module.exports.add = (event, context, callback) => {
     return;
   }
 
-  addRestaurant(restaurantInfo(requestBody))
-    .then(res => {
+  try {
+    const res = await addRestaurant(restaurantInfo(requestBody));
+    if (res) {
       callback(null, {
         statusCode: 200,
         body: JSON.stringify({
@@ -54,28 +55,26 @@ module.exports.add = (event, context, callback) => {
           restaurantId: res.id
         })
       });
-    })
-    .catch(err => {
-      console.log(err);
-      callback(null, {
-        statusCode: 500,
-        body: JSON.stringify({
-          message: `Unable to submit restaurant with restaurantName ${restaurantName}`
-        })
-      });
+    }
+  } catch (err) {
+    console.log(err);
+    callback(null, {
+      statusCode: 500,
+      body: JSON.stringify({
+        message: `Unable to submit restaurant with restaurantName ${restaurantName}`
+      })
     });
+  }
 };
 
-const addRestaurant = restaurant => {
+const addRestaurant = async restaurant => {
   console.log('Adding restaurant');
   const restaurantInfo = {
     TableName: process.env.RESTAURANT_TABLE,
     Item: restaurant
   };
-  return dynamoDb
-    .put(restaurantInfo)
-    .promise()
-    .then(res => restaurant);
+  const res = await dynamoDb.put(restaurantInfo).promise();
+  return restaurant;
 };
 
 const restaurantInfo = requestBody => {
@@ -142,7 +141,7 @@ module.exports.list = (event, context, callback) => {
 };
 
 // 특정 맛집 정보 조회
-module.exports.get = (event, context, callback) => {
+module.exports.get = async (event, context, callback) => {
   const params = {
     TableName: process.env.RESTAURANT_TABLE,
     Key: {
@@ -150,21 +149,20 @@ module.exports.get = (event, context, callback) => {
     }
   };
 
-  dynamoDb
-    .get(params)
-    .promise()
-    .then(result => {
+  try {
+    const result = await dynamoDb.get(params).promise();
+    if (result) {
       const response = {
         statusCode: 200,
         body: JSON.stringify(result.Item)
       };
       callback(null, response);
-    })
-    .catch(error => {
-      console.error(error);
-      callback(new Error("Couldn't fetch restaurant."));
-      return;
-    });
+    }
+  } catch (error) {
+    console.error(error);
+    callback(new Error("Couldn't fetch restaurant."));
+    return;
+  }
 };
 
 // 맛집 랜덤 추첨
@@ -194,23 +192,26 @@ module.exports.getRandom = (event, context, callback) => {
 };
 
 // 이미지 업로드
-module.exports.uploadImage = (event, context, callback) => {
+module.exports.uploadImage = async (event, context, callback) => {
   let requestBody = JSON.parse(event.body);
   let imageURL = requestBody.imageURL;
   let objectId = uuid.v4();
   let objectKey = `resize-${width}x${height}-${objectId}.png`;
 
-  fetchImage(imageURL)
-    .then(image => image.resize(width, height).getBufferAsync(imageType))
-    .then(resizedBuffer => uploadToS3(resizedBuffer, objectKey))
-    .then(function(response) {
+  try {
+    const image = await fetchImage(imageURL);
+    const resizedBuffer = await image.resize(width, height).getBufferAsync(imageType);
+    const response = await uploadToS3(resizedBuffer, objectKey);
+    if (response) {
       console.log(`Image ${objectKey} was uploaed and resized`);
       callback(null, {
         statusCode: 200,
         body: JSON.stringify(response)
       });
-    })
-    .catch(error => console.log(error));
+    }
+  } catch (error) {
+    console.log(error);
+  }
 };
 
 /**
