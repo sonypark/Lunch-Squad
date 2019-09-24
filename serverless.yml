@@ -26,10 +26,12 @@ resources:
       DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
-          - AttributeName: 'id'
+          - 
+            AttributeName: 'id'
             AttributeType: 'S'
         KeySchema:
-          - AttributeName: 'id'
+          - 
+            AttributeName: 'id'
             KeyType: 'HASH'
         ProvisionedThroughput:
           ReadCapacityUnits: 1
@@ -37,9 +39,9 @@ resources:
         StreamSpecification:
           StreamViewType: 'NEW_AND_OLD_IMAGES'
         TableName: ${self:provider.environment.RESTAURANT_TABLE}
-    
+
     StorageBucket:
-      Type: "AWS::S3::Bucket"
+      Type: 'AWS::S3::Bucket'
       Properties:
         BucketName: ${self:provider.environment.BUCKET_NAME}
 
@@ -68,14 +70,14 @@ functions:
       - http:
           path: restaurant/{id}
           method: get
-  
+
   randomRecommendation:
     handler: api/restaurants.getRandom
     events:
       - http:
           path: restaurant/random
           method: get
-  
+
   UploadImage:
     handler: api/restaurants.uploadImage
     events:

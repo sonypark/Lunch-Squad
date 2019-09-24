@@ -4,8 +4,10 @@ const uuid = require('uuid');
 const Jimp = require('jimp');
 const AWS = require('aws-sdk');
 const s3 = new AWS.S3();
-const width = 200;
-const height = 200;
+const width = 400;
+const height = 400;
+const thumb_width = 150;
+const thumb_height = 150;
 const imageType = 'image/png';
 const bucket = process.env.BUCKET_NAME;
 const shuffle = require('../utils/shuffle');
@@ -46,7 +48,17 @@ module.exports.add = async (event, context, callback) => {
   }
 
   try {
-    const res = await addRestaurant(restaurantInfo(requestBody));
+    const img = await uploadImageToS3(imageURL, width, height);
+    const thumb_img = await uploadImageToS3(
+      imageURL,
+      thumb_width,
+      thumb_height
+    );
+    const img_url = `https://lunchsquad-restaurant-img.s3.ap-northeast-2.amazonaws.com/${img}`;
+    const thumb_img_url = `https://lunchsquad-restaurant-img.s3.ap-northeast-2.amazonaws.com/${thumb_img}`;
+    const res = await addRestaurant(
+      restaurantInfo(requestBody, img_url, thumb_img_url)
+    );
     if (res) {
       callback(null, {
         statusCode: 200,
@@ -67,6 +79,25 @@ module.exports.add = async (event, context, callback) => {
   }
 };
 
+const uploadImageToS3 = async (imageURL, width, height) => {
+  let objectId = uuid.v4();
+  let objectKey = `resize-${width}x${height}-${objectId}.png`;
+
+  try {
+    const image = await fetchImage(imageURL);
+    const resizedBuffer = await image
+      .resize(width, height)
+      .getBufferAsync(imageType);
+    const response = await uploadToS3(resizedBuffer, objectKey);
+
+    if (response) {
+      return objectKey;
+    }
+  } catch (error) {
+    console.log(error);
+  }
+};
+
 const addRestaurant = async restaurant => {
   console.log('Adding restaurant');
   const restaurantInfo = {
@@ -77,7 +108,7 @@ const addRestaurant = async restaurant => {
   return restaurant;
 };
 
-const restaurantInfo = requestBody => {
+const restaurantInfo = (requestBody, img_url, thumb_img_url) => {
   const {
     name: restaurantName,
     foodType,
@@ -105,9 +136,10 @@ const restaurantInfo = requestBody => {
     contactNumber: contactNumber,
     recommend: recommend,
     review: review,
-    positionX: positionX,
-    positionY: positionY,
-    imageURL: imageURL,
+    lat: positionX,
+    lng: positionY,
+    imageURL: img_url,
+    thumnailImageURL: thumb_img_url,
     submittedAt: timestamp,
     updatedAt: timestamp
   };
@@ -118,7 +150,7 @@ module.exports.list = (event, context, callback) => {
   const params = {
     TableName: process.env.RESTAURANT_TABLE,
     ProjectionExpression:
-      'id, restaurantName, foodType, address, recommendedMenu, price, businessHour, contactNumber, recommend, review, positionX, positionY'
+      'id, restaurantName, foodType, address, recommendedMenu, price, businessHour, contactNumber, recommend, review, lat, lng, imageURL, thumnailImageURL'
   };
 
   console.log('Scanning restaurant table');
@@ -131,9 +163,14 @@ module.exports.list = (event, context, callback) => {
       callback(err);
     } else {
       console.log('Scan succeeded');
+
+      const new_data = data.Items.reduce((acc, item) => {
+        acc[item.id] = item;
+        return acc;
+      }, {});
       return callback(null, {
         statusCode: 200,
-        body: JSON.stringify(data.Items)
+        body: JSON.stringify(new_data)
       });
     }
   };
@@ -170,7 +207,7 @@ module.exports.getRandom = (event, context, callback) => {
   const params = {
     TableName: process.env.RESTAURANT_TABLE,
     ProjectionExpression:
-      'id, restaurantName, foodType, address, recommendedMenu, price, businessHour, contactNumber, recommend, review, positionX, positionY'
+      'id, restaurantName, foodType, address, recommendedMenu, price, businessHour, contactNumber, recommend, review, lat, lng, imageURL, thumnailImageURL'
   };
 
   console.log('Scanning randomly restaurant table');
@@ -200,7 +237,9 @@ module.exports.uploadImage = async (event, context, callback) => {
 
   try {
     const image = await fetchImage(imageURL);
-    const resizedBuffer = await image.resize(width, height).getBufferAsync(imageType);
+    const resizedBuffer = await image
+      .resize(width, height)
+      .getBufferAsync(imageType);
     const response = await uploadToS3(resizedBuffer, objectKey);
     if (response) {
       console.log(`Image ${objectKey} was uploaed and resized`);
@@ -218,7 +257,7 @@ module.exports.uploadImage = async (event, context, callback) => {
  * @param {*} data
  * @param {string} key
  */
-function uploadToS3(data, key) {
+const uploadToS3 = (data, key) => {
   return s3
     .putObject({
       Bucket: bucket,
@@ -227,12 +266,12 @@ function uploadToS3(data, key) {
       ContentType: imageType
     })
     .promise();
-}
+};
 
 /**
  * @param {url}
  * @returns {Promise}
  */
-function fetchImage(url) {
+const fetchImage = url => {
   return Jimp.read(url);
-}
+};
