@@ -163,14 +163,12 @@ module.exports.list = (event, context, callback) => {
       callback(err);
     } else {
       console.log('Scan succeeded');
-
-      const new_data = data.Items.reduce((acc, item) => {
-        acc[item.id] = item;
-        return acc;
-      }, {});
       return callback(null, {
         statusCode: 200,
-        body: JSON.stringify(new_data)
+        headers: {
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify(data.Items)
       });
     }
   };
