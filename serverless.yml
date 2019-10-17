@@ -26,12 +26,10 @@ resources:
       DeletionPolicy: Retain
       Properties:
         AttributeDefinitions:
-          - 
-            AttributeName: 'id'
+          - AttributeName: 'id'
             AttributeType: 'S'
         KeySchema:
-          - 
-            AttributeName: 'id'
+          - AttributeName: 'id'
             KeyType: 'HASH'
         ProvisionedThroughput:
           ReadCapacityUnits: 1
@@ -40,10 +38,30 @@ resources:
           StreamViewType: 'NEW_AND_OLD_IMAGES'
         TableName: ${self:provider.environment.RESTAURANT_TABLE}
 
+    UserDynamoDbTable:
+      Type: 'AWS::DynamoDB::Table'
+      DeletionPolicy: Retain
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: 'userId'
+            AttributeType: 'S'
+        KeySchema:
+          - AttributeName: 'userId'
+            KeyType: 'HASH'
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: 'NEW_AND_OLD_IMAGES'
+        TableName: ${self:provider.environment.USER_TABLE}
+
     StorageBucket:
       Type: 'AWS::S3::Bucket'
       Properties:
         BucketName: ${self:provider.environment.BUCKET_NAME}
+
+    CognitoUserPoolLunchSquad:
+      Type: 'AWS::Cognito::UserPool'
 
 functions:
   addRestaurants:
@@ -85,6 +103,14 @@ functions:
           path: restaurant/upload_img
           method: post
           cors: true
+
+  RegisterUserToDynamoDB:
+    handler: api/users.registerUserToDynamoDB
+    description: Register user in DynamoDB after recieve cognito post confirmation event
+    events:
+      - cognitoUserPool:
+          pool: LunchSquad
+          trigger: PostConfirmation
 
 plugins:
   - serverless-offline
