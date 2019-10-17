@@ -21,15 +21,11 @@ module.exports.registerUserToDynamoDB = async (event, context, callback) => {
     const res = await dynamoDb.put(user_info).promise();
 
     if (res) {
-      callback(null, {
-        statusCode: 200,
-        body: JSON.stringify({
-          message: `Sucessfully register user with nickname ${user_info.nickname}`,
-          userId: user_info.userId
-        })
-      });
+      // Send successful message
+      context.succeed(event);
     }
   } catch (error) {
-    console.error(error);
+    // Send error message
+    context.fail(err);
   }
 };
