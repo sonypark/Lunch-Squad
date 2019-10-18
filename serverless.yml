@@ -9,6 +9,8 @@ provider:
     RESTAURANT_TABLE: ${self:service}-${opt:stage, self:provider.stage}
     USER_TABLE: 'user-${opt:stage, self:provider.stage}'
     BUCKET_NAME: 'lunchsquad-${self:service}-img'
+    COGNITO_POOL_ID: 'ap-northeast-2_xHKF0PEUB'
+    COGNITO_REGION: 'ap-northeast-2'
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -111,6 +113,14 @@ functions:
       - cognitoUserPool:
           pool: LunchSquad
           trigger: PostConfirmation
+
+  VerifyJWT:
+    handler: api/users.verifyJwt
+    description: Decode and verity jwt sent from client
+    events:
+      - http:
+          path: user/jwt
+          method: get
 
 plugins:
   - serverless-offline
