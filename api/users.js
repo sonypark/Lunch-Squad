@@ -51,13 +51,36 @@ module.exports.verifyJwt = async (event, context, callback) => {
 module.exports.verifyGoogleLogin = async (event, context, callback) => {
   try {
     const result = await verifyGoogleToken(event.headers.token);
-    if (result) {
-      console.log(`Verification success with ${result}`);
-      callback(null, {
-        statusCode: 200,
-        body: JSON.stringify(result)
-      });
+
+    const user_info = {
+      TableName: process.env.USER_TABLE,
+      Item: {
+        userId: result['sub'],
+        email: result['email'],
+        nickname: result['name']
+      }
+    };
+
+    const params = {
+      TableName: process.env.USER_TABLE,
+      Key: {
+        userId: result['sub']
+      }
+    };
+
+    const res = await dynamoDb.get(params).promise();
+
+    // if the user doesn't exist in DB
+    if (Object.keys(res).length === 0) {
+      // register google login user info to DynamoDB
+      await dynamoDb.put(user_info).promise();
     }
+
+    console.log(`Verification success with ${result}`);
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(result)
+    });
   } catch (error) {
     console.error(error);
   }
