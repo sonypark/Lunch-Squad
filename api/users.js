@@ -5,6 +5,7 @@ const AWS = require('aws-sdk');
 AWS.config.setPromisesDependency(require('bluebird'));
 
 const decodeJwt = require('../utils/decode-verify-jwt');
+const verifyGoogleToken = require('../utils/verifyGoogleToken');
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
@@ -37,6 +38,21 @@ module.exports.verifyJwt = async (event, context, callback) => {
     const result = await decodeJwt(event.headers);
     if (result) {
       console.log(`Verification is ${result.isValid}`);
+      callback(null, {
+        statusCode: 200,
+        body: JSON.stringify(result)
+      });
+    }
+  } catch (error) {
+    console.error(error);
+  }
+};
+
+module.exports.verifyGoogleLogin = async (event, context, callback) => {
+  try {
+    const result = await verifyGoogleToken(event.headers.token);
+    if (result) {
+      console.log(`Verification success with ${result}`);
       callback(null, {
         statusCode: 200,
         body: JSON.stringify(result)

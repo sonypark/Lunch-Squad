@@ -11,6 +11,7 @@ provider:
     BUCKET_NAME: 'lunchsquad-${self:service}-img'
     COGNITO_POOL_ID: 'ap-northeast-2_xHKF0PEUB'
     COGNITO_REGION: 'ap-northeast-2'
+    GOOGLE_CLIENT_ID: '726729206181-s4juih3ct7umd1hc028rarv2at97vdtl.apps.googleusercontent.com'
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -121,6 +122,14 @@ functions:
       - http:
           path: user/jwt
           method: get
+
+  VerifyGoogleLoginToken:
+    handler: api/users.verifyGoogleLogin
+    description: Verity token sent from google oauth login
+    events:
+      - http:
+          path: user/google_login
+          method: post
 
 plugins:
   - serverless-offline
