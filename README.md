@@ -39,5 +39,12 @@
 - [x] 식당 이미지 추가 시 이미지 리사이즈 후 S3 저장
     - [x]  썸네일 이미지 (width=150)
     - [x]  상세 이미지 (width=400)
+- [x] AWS Cognito를 이용한 회원가입 로그인 구현
+    - [x] Cognito로 회원 가입을 하면 Cognito DB에 저장
+    - [x] 이메일로 인증 할 경우 백엔드 서버에서 이벤트를 받아 DynamoDB에 저장
+    - [x] JWT 토근을 이용한 사용자 인증 진행 (로그인 시 Cognito에서 JWT을 발행하고 백엔드 서버에서 토큰 검증)
+- [ ] Oauth 로그인 구현
+    - [x] 구글 로그인
+    - [ ] 페이스북 로그인
 - [ ] API 문서 작성
 - [ ] TravisCI & AWS CodeDeploy로 배포 자동화 구축하기
