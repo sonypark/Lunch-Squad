@@ -169,7 +169,8 @@ module.exports.list = (event, context, callback) => {
       return callback(null, {
         statusCode: 200,
         headers: {
-          'Access-Control-Allow-Origin': '*'
+          'Access-Control-Allow-Origin': '*',
+          'Set-Cookie': 'HttpOnly; Secure; SameSite=Strict'
         },
         body: JSON.stringify(data.Items)
       });
@@ -192,6 +193,9 @@ module.exports.get = async (event, context, callback) => {
     if (result) {
       const response = {
         statusCode: 200,
+        headers: {
+          'Set-Cookie': 'HttpOnly; Secure; SameSite=Strict'
+        },
         body: JSON.stringify(result.Item)
       };
       callback(null, response);
@@ -223,6 +227,9 @@ module.exports.getRandom = (event, context, callback) => {
     console.log('Random Scan succeeded');
     return callback(null, {
       statusCode: 200,
+      headers: {
+        'Set-Cookie': 'HttpOnly; Secure; SameSite=Strict'
+      },
       body: JSON.stringify(...shuffle(data.Items).splice(0, 1))
     });
   };
@@ -246,6 +253,9 @@ module.exports.uploadImage = async (event, context, callback) => {
       console.log(`Image ${objectKey} was uploaed and resized`);
       callback(null, {
         statusCode: 200,
+        headers: {
+          'Set-Cookie': 'HttpOnly; Secure; SameSite=Strict'
+        },
         body: JSON.stringify(response)
       });
     }

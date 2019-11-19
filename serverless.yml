@@ -121,7 +121,7 @@ functions:
     events:
       - http:
           path: user/jwt
-          method: get
+          method: post
 
   VerifyGoogleLoginToken:
     handler: api/users.verifyGoogleLogin

@@ -40,6 +40,9 @@ module.exports.verifyJwt = async (event, context, callback) => {
       console.log(`Verification is ${result.isValid}`);
       callback(null, {
         statusCode: 200,
+        headers: {
+          'Set-Cookie': 'HttpOnly; Secure; SameSite=Strict'
+        },
         body: JSON.stringify(result)
       });
     }
