@@ -62,6 +62,9 @@ module.exports.add = async (event, context, callback) => {
     if (res) {
       callback(null, {
         statusCode: 200,
+        headers: {
+          'Set-Cookie': 'HttpOnly; Secure; SameSite=Strict'
+        },
         body: JSON.stringify({
           message: `Sucessfully submitted restaurant with restaurantName ${restaurantName}`,
           restaurantId: res.id

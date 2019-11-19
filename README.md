@@ -7,12 +7,16 @@
 - Web Front-end: Gren
 - Web Back-end: Sony
 
+## AWS Architecture Diagram
+
+![](https://images.velog.io/post-images/sonypark/957eaaa0-0a96-11ea-88ce-9bcf4878acfb/lunchSquadAWSDiagram2.png)
+
 ## Route
 - API Base URL: `https://ldlyo4kkqc.execute-api.ap-northeast-2.amazonaws.com/dev/`
     
     - 모든 식당 조회(GET): `/restaurants`
     - 특정 식당 조회(GET): `/restaurant/:restaurant_id`
-    - 랜덤 맛집 추천(GET): `restaurant/random`
+    - 랜덤 맛집 추천(GET): `/restaurant/random`
 
 ## 지도 API: 카카오맵 API 사용
 - 이유
@@ -41,10 +45,21 @@
     - [x]  상세 이미지 (width=400)
 - [x] AWS Cognito를 이용한 회원가입 로그인 구현
     - [x] Cognito로 회원 가입을 하면 Cognito DB에 저장
-    - [x] 이메일로 인증 할 경우 백엔드 서버에서 이벤트를 받아 DynamoDB에 저장
+    - [x] 이메일 인증이 완료되면 백엔드 서버에서 이벤트를 받아 DynamoDB에 저장
     - [x] JWT 토근을 이용한 사용자 인증 진행 (로그인 시 Cognito에서 JWT을 발행하고 백엔드 서버에서 토큰 검증)
-- [ ] Oauth 로그인 구현
+- [x] OAuth 로그인 구현
     - [x] 구글 로그인
-    - [ ] 페이스북 로그인
+    - [x] 페이스북 로그인
+- [x] Cloudfront 적용
+    - AWS Cognito에서 OAuth 로그인을 지원하려면 https여야 한다.
+    - 따라서 CloudFront를 이용해 CDN 주소를 할당받았다.
+    - CDN의 장점
+        1. S3에 커스텀 도메인 + HTTPS 지원
+        2. CDN 을 통한 더 빠른 페이지 응답속도
+- [ ] 리뷰 등록 기능 구현
+    - 로그인한 유저에 한해 리뷰 작성 가능
+- [ ] 관리자 페이지 생성
+    - 식당 추가, 수정, 삭제
+    - 회원 관리
 - [ ] API 문서 작성
 - [ ] TravisCI & AWS CodeDeploy로 배포 자동화 구축하기
